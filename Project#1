@@ -1,0 +1,1486 @@
+.data
+Hello: .asciiz "Hi and welcome to our project!\n"
+PrintToUser1: .asciiz "Exiting...!\n"
+WhatDay: .asciiz "\nwhat is the number of day?\n"
+WhatStartTime: .asciiz "\nProvide Start Time(8-9-10-11-12-13-14-15-16-17)(24 hour format):\n"
+WhatEndTime: .asciiz "\nProvide End time(8-9-10-11-12-13-14-15-16-17)(24 hour format)\n"
+HowManyDays: .asciiz "\nHow many days to display?\n"
+filename:  .asciiz "C:/Users/DELL/Desktop/Mips Assembly/Calendarr.txt"   # Specify the file name
+UserChoose: .asciiz "\nChoose:\n1-View Calendar\n2-View statistics\n3-Add Appointment\n4-Delete Appointment\n(press '0' for exit)\n"
+UserChoose1: .asciiz "\nChoose:\n1-View per day\n2-View per set of days\n3-View a given slot for a given day\n"
+UserChoose2: .asciiz "\nChoose:\n1-Number of Lectures(in hours)\n2-Number of OH(in hours)\n3-Number of meetings(in hours)\n4-Avg lectures per day\n5-Ratio between number of L and number of OH\n"
+Input11InvalidDay: .asciiz "\nInvalid Input,Insert a number between 1-31\n"
+Input1Valid: .asciiz "\nInvalid Input,Insert a number between 1-4\n"
+Input11Valid: .asciiz "\nInvalid Input,Insert a number between 1-3\n"
+InvalidInput13: .asciiz "\nThe number should at least be between 1-31\n"
+InvalidInput2: .asciiz "\nInvalid Input,Insert number between 1-5\n"
+InvalidInputTime133: .asciiz "\nInvalid Input,Insert a number between 8-17\n"
+InvalidInputTime1333: .asciiz "\nInvalid Input, Insert a number that is higher than:"
+NewLine: .asciiz "\n"
+DayFound: .asciiz "\nDay Found!\n"
+DayNotFound: .asciiz "Day does not exist\n"
+NumberOFDays: .asciiz "\nNumber of days:"
+LectureHoursAre: .asciiz "\nLecture hours in calendar = "
+OHHoursAre: .asciiz "\nOffice hours in calendar are= "
+MeetingHoursAre: .asciiz "\nMeeting hours in calendar are= "
+AvgLecturesAre: .asciiz "\nAvg Lectures per day is= "
+RatioEquals: .asciiz "\nRatio = "
+InsertDay: .asciiz "\nInsert day number:\n"
+InsertLectureBeginEndTime: .asciiz "\nInsert Lecture start and end time (example:11-12)\n"
+InsertOHBeginEndTime: .asciiz "\nInsert OH start and end time (example:11-12)\n"
+InsertMeetingBeginEndTime: .asciiz "\nInsert meeting start and end time (example:11-12)\n"
+OpenErrorMsg: .asciiz "Error opening the file.\n"
+WriteErrorMsg: .asciiz "Error writing to the file.\n"
+DayAlreadyExist: .asciiz "\nDay already exists\n"
+IncorrectLectureInsertionStartt: .asciiz "\nInvalid input(1-5) or (8-12)\n"
+IncorrectLectureInsertionStartEndd: .asciiz "\nInvalid Input,Insert a number more than:"
+IncorrectLectureInsertionStartLessThann8: .asciiz "\nInvalid input, start time must be 8 or more!\n"
+IncorrectLectureInsertionStartttEndTimee: .asciiz "\nInvalid input, End time must be 5 or less!"
+TimeSlotView: .asciiz "\n10-11 OH\n1-3 M\n"
+Zero: .asciiz "0"
+Colon: .asciiz ":"
+Space: .asciiz " "
+Comma: .asciiz ","
+Hyphen: .asciiz "-"
+L: .asciiz "L"
+M: .asciiz "M"
+OH: .asciiz "OH"
+
+DeleteIndex: .word 0
+
+LectureInsertion: .space 5
+OHInsertion: .space 5
+MeetingInsertion: .space 5
+DayInsertion: .space 3
+
+CalendarArray: .space 248#124	#suuposing that there 31 days in the month
+CalendarArray2d: .space 280 # 2D Array
+
+.text
+main:
+#print to user
+	li $v0,4
+	la $a0,Hello
+	syscall
+
+# Load calendar from file
+	jal loadCalendar
+	
+	li $v0,4
+	la $a0,NewLine
+	syscall
+	
+#load calendar from file into 2d array
+	jal loadCalendar2d
+
+# make the user choose between 1- add appointment, 2- delete appointment, 3- view calendar, 4- view statistics
+	enter:
+	#print to user
+	li $v0,4
+	la $a0,UserChoose
+	syscall
+#read user input(integer entered is stored in $v0)
+	li $v0,5
+	syscall
+	
+	# User Choice stored in $t7
+	move $t7,$v0
+	
+	#Direct code based on user choice
+	beq $t7, 1, UserInput1#view calendar
+	beq $t7, 2, UserInput2#view stats
+	beq $t7, 3, UserInput3#Add Appointment
+	beq $t7, 4, UserInput4#Delete Appointment
+	beq $t7, 0, Exit#Exit
+	blt $t7,0,IncorrectInput1 #Invalid input
+	bgt $t7,4,IncorrectInput1 #Invalid input
+	
+IncorrectInput1:
+	#print to user that input is invalid
+	li $v0,4
+	la $a0,Input1Valid
+	syscall
+	
+	j enter #go back to start
+	
+UserInput1:
+	#Print choices to user
+	li $v0,4
+	la $a0,UserChoose1
+	syscall
+	
+	#Read From User
+	li $v0,5
+	syscall
+	
+	#user choice is in t8
+	move $t8,$v0
+	
+	#check user's choice
+	beq $t8, 1, UserInput11#view per day
+	beq $t8, 2, UserInput12#view per set of days
+	beq $t8, 3, UserInput13#view per slot of a day
+	blt $t8,1,IncorrectInput11 #Invalid input
+	bgt $t8,3,IncorrectInput11 #Invalid input
+	
+IncorrectInput11:
+	#print to user that input is invalid
+	li $v0,4
+	la $a0,Input11Valid
+	syscall
+	
+	j enter #go back to start
+	
+UserInput11: #VIEW PER DAY
+# Ask the user for the day number
+    li $v0, 4
+    la $a0, WhatDay
+    syscall
+
+    # Read user input (day number)
+    li $v0, 5
+    syscall
+    
+    #Check user input validation
+    blt $v0,1,IncorrectInput11Day #if the input is less than 1 --> exit
+    bgt $v0,31,IncorrectInput11Day #if the input is greater than 31 --> exit
+    
+    move $t9, $v0  # $t9 holds the user-specified day 
+    
+    # Load the address of the calendar buffer
+    la $t0, CalendarArray
+    
+    mul $t9,$t9,4
+    add $t9,$t9,$t0 #t0 = calendarArray1d
+    andi $t9, $t9, 0xFFFFFFFC   # Clear the last two bits, aligning to a word boundary
+    
+    lw $t1,0($t9)
+    beq $t1, $zero, empty_cell_labell
+    
+    li $v0,4 # printing string , (The line)
+    lw $a0,0($t9)
+    syscall
+
+    j enter  # Go back to the user choosing
+    
+    empty_cell_label:
+    # Print "no value" or take appropriate action for an empty cell
+    li $v0, 4
+    la $a0, DayNotFound
+    syscall 
+    
+    addi $t2,$t2,1
+    bne $t1,$t2,DayLoop
+    j enter
+    
+empty_cell_labell:
+    # Print "no value" or take appropriate action for an empty cell
+    li $v0, 4
+    la $a0, DayNotFound
+    syscall 
+    
+    j enter
+    
+    
+    IncorrectInput11Day:
+    	#print to user that the input is not valid
+    	li $v0, 4
+        la $a0, Input11InvalidDay
+        syscall
+
+        j enter  # Go back to the user choosing
+	
+UserInput12:#VIEW PER SET OF DAYS (SAME AS BEFORE BUT WITH LOOPS)
+	
+	#ask user how many days
+	li $v0,4
+	la $a0,HowManyDays
+	syscall
+	
+	#Read From User (Number of days to display)
+	li $v0,5
+	syscall
+	
+	bgt $v0,31,IncorrectInput12 #if the day entered is more than 31, show error message
+	blt $v0,0,IncorrectInput12  #if the day entered is less than 0, show error message
+	
+	move $t1,$v0 #How many days are stored in $t1
+	li $t2,0 #iterator
+	la $t0, CalendarArray # Load the address of the calendar buffer
+    
+#Based on how many days, create a loop that iterates as many days, and display the day
+DayLoop:
+	li $v0, 4
+    	la $a0, WhatDay
+    	syscall
+
+	# Read user input (day number)
+    	li $v0, 5
+    	syscall
+	
+	#Check user input validation
+    	blt $v0,1,IncorrectInput11Day #if the input is less than 1 --> exit
+    	bgt $v0,31,IncorrectInput11Day #if the input is greater than 31 --> exit
+	
+	move $t9, $v0  # $t9 holds the user-specified day 
+    
+    	mul $t9,$t9,4 #i*4
+    	add $t9,$t9,$t0 # i*4 + $CalendarArray
+    	andi $t9, $t9, 0xFFFFFFFC   # Clear the last two bits, aligning to a word boundary
+    
+    	lw $t3,0($t9)
+    	beq $t3, $zero,empty_cell_label
+    
+    	li $v0,4
+    	lw $a0,0($t9)
+    	syscall
+    	
+    	addi $t2,$t2,1
+    	bne $t1,$t2,DayLoop
+
+	j enter #Go back to user choosing
+	
+	IncorrectInput12: #if user entered invalid input
+ 	li $v0, 4
+    	la $a0, InvalidInput13
+    	syscall
+    	j enter
+	
+	
+UserInput13:#View a given slot for a given day
+
+	#ask for day number
+	#ask for slot start time
+	#ask for slot end time
+	#make sure its between 8AM-5PM
+	
+	la $t0,CalendarArray
+	
+	# Ask the user for the day number
+ 	li $v0, 4
+    	la $a0, WhatDay
+    	syscall
+
+    	# Read user input (day number)
+    	li $v0, 5
+    	syscall
+    	
+    	bgt $v0,31,IncorrectInput13 #if the day entered is more than 31, show error message
+	blt $v0,0,IncorrectInput13  #if the day entered is less than 0, show error message
+    	
+    	move $t1,$v0 #$t1 now holds the day 
+    
+    	mul $t1,$t1,4 #i*4
+    	add $t1,$t1,$t0 # i*4 + $CalendarArray
+    	andi $t1, $t1, 0xFFFFFFFC   # Clear the last two bits, aligning to a word boundary
+    
+    	lw $t2,0($t1)
+    	beq $t2, $zero, empty_cell_labelll
+RepeatStartTime:
+    	#Ask the user for start time
+    	li $v0, 4
+    	la $a0, WhatStartTime
+    	syscall
+    	    	
+    	# Read user input (Start Time)(AM/PM)
+    	li $v0, 5
+    	syscall
+    	
+     	blt $v0,8,InvalidInput133
+    	bgt $v0,17,InvalidInput133
+    	
+	move $t2,$v0 #$t2 now hold Start time
+	
+	#Ask the user for End time
+    	li $v0, 4
+    	la $a0, WhatEndTime
+    	syscall
+    	
+    	# Read user input (End Time)(AM/PM)
+    	li $v0, 5
+    	syscall
+    	
+    	blt $v0,8,InvalidInput133
+    	bgt $v0,17,InvalidInput133
+    	blt $v0,$t2,InvalidInput1333
+	
+	move $t3,$v0 #$t3 now hold end time
+	
+#----
+	#look into the calendar, find the day, then find the slot, then print it 
+	
+	li $v0,4
+	la $a0,TimeSlotView
+	syscall
+	
+#----
+	j enter #Go back to user choosing
+	
+	IncorrectInput13: #if user entered invalid input
+ 	li $v0, 4
+    	la $a0, InvalidInput13
+    	syscall
+    	j enter
+    	
+    	InvalidInput133:#if the user entered input<8 | input<17
+    	
+    	li $v0,4
+    	la $a0,InvalidInputTime133
+    	syscall
+    	
+    	j RepeatStartTime
+    	
+    	InvalidInput1333:#if the user entered End Time < Start Time
+    	
+    	li $v0,4
+    	la $a0,InvalidInputTime1333
+    	syscall
+    	
+    	li $v0,1
+    	move $a0,$t2
+    	syscall
+    	
+    	j RepeatStartTime
+	
+empty_cell_labelll:
+    # Print "no value" or take appropriate action for an empty cell
+    li $v0, 4
+    la $a0, DayNotFound
+    syscall 
+    
+    j UserInput13
+
+UserInput2:#User choose to view stats
+#$s5 is for lectures hours
+#$s6 is for OH hours
+#$s7 is for meetings hours
+	
+	#Print to user
+	li $v0,4
+	la $a0,UserChoose2
+	syscall
+	
+	#Read From User
+	li $v0,5
+	syscall
+	
+	move $t8,$v0
+	
+	beq $t8, 1, UserInput21#lecture hours
+	beq $t8, 2, UserInput22#OH hours
+	beq $t8, 3, UserInput23#meetings hours
+	beq $t8, 4, UserInput24#avg
+	beq $t8, 5, UserInput25#ratio
+	bgt $t8,5,IncorrectInput2
+	blt $t8,1,IncorrectInput2
+	
+UserInput21:#Number of lectures (in hours)
+	#iterate between all calendar lines, find lectures, start adding to $s0
+	#store them in $s0
+	
+	li $v0,4
+	la $a0,LectureHoursAre
+	syscall
+	
+	li $v0,1
+	move $a0,$s5 #$s5 contains Lecture hoours
+	syscall
+	j enter #to go back to user choosing
+
+	
+UserInput22:#Number of OH (in hours)
+	#iterate between all calendar lines, find OH, start adding to $s1
+	#store them in $s1
+	li $v0,4
+	la $a0,OHHoursAre
+	syscall
+	
+        li $v0,1
+	move $a0,$s6
+	syscall
+	j enter #to go back to user choosing
+
+	
+UserInput23:#Number of meetings (in hours)
+	#iterate between all calendar lines, find meetings, start adding to $s2
+	#store them in $s2
+	li $v0,4
+	la $a0,MeetingHoursAre
+	syscall
+	
+	li $v0,1
+	move $a0,$s7
+	syscall
+	j enter #to go back to user choosing
+	
+	
+UserInput24:#Avg of lectures per day
+	#Lectures hours / Total number of days(Number of lines)
+	
+	 # Convert the divisor to a floating-point value
+   	mtc1 $s2, $f0  # Convert integer in $s2 to floating-point and store in $f0 ,  "Move to Coprocessor 1"
+
+    	# Convert the dividend to a floating-point value
+    	mtc1 $s5, $f1  # Convert integer in $s5 to floating-point and store in $f1 ,  "Move to Coprocessor 1"
+
+    	# Perform the division
+    	div.s $f2, $f1, $f0  # $f2 = $f1 / $f0 , performing floating-point division
+
+	li $v0,4 #Print string
+	la $a0,AvgLecturesAre
+	syscall
+	
+	li $v0,2 #Print float
+	mov.s $f12,$f2
+	syscall
+
+	j enter #to go back to user choosing
+	
+UserInput25:#ratio between L and OH
+	#Lectures hours / OH hours 
+	
+	# Convert the divisor to a floating-point value
+   	mtc1 $s6, $f0  # Convert integer in $s5 to floating-point and store in $f0 ,  "Move to Coprocessor 1"
+
+    	# Convert the dividend to a floating-point value
+    	mtc1 $s5, $f1  # Convert integer in $s2 to floating-point and store in $f1 ,  "Move to Coprocessor 1"
+
+    	# Perform the division
+    	div.s $f2, $f1, $f0  # $f2 = $f1 / $f0 , floating division
+
+	li $v0,4
+	la $a0,RatioEquals
+	syscall
+	
+	li $v0,2 #Print float
+	mov.s $f12,$f2
+	syscall
+	j enter #to go back to user choosing
+
+IncorrectInput2:
+	li $v0, 4
+    	la $a0, InvalidInput2
+    	syscall
+    	j enter
+    	
+IncorrectDayInsertion:
+	li $v0,4
+	la $a0,InvalidInput13
+	syscall	
+	
+	j UserInput3
+
+DarAlrdyExist:
+	li $v0,4
+	la $a0,DayAlreadyExist
+	syscall
+	
+	j UserInput3
+
+#------------------
+SecondDigitAfterHyphen:
+	sub $t2,$t2,'0'
+	mul $t9,$t9,10
+	add $t9,$t9,$t2
+	li $s3,0 #reset integer flag
+	li $t6,0 #reset hyphen flag
+	j BackFromHyphen
+	
+HyphenOccured:
+	li $t6,1#Hyphen Flag
+	li $s3,0#1st integer flag
+	j BackFromHyphen
+AfterHyphen:
+	beq $s3,1,SecondDigitAfterHyphen
+	li $s3,1
+	sub $t2,$t2,'0'
+	move $t9,$t2 #$t9 has 1st digit after hyphen
+	j BackFromDigit
+Digit1LectureInsertion:
+	ble $t2,'9',Digit2LectureInsertion
+	j BackFromDigit
+	
+Digit2LectureInsertion:
+	beq $t6,1,AfterHyphen # check if hyphen flag was up
+	beq $s3,1,LectureFlagUp#check if the flag was up 
+	li $s3,1 #raise the flag
+	sub $t2,$t2,'0' #convert to integer
+	move $t8,$t2 #$t8 now holds the first digit
+	j BackFromDigit
+	
+LectureFlagUp:
+	li $s3,0 #Reset Flag 1st integer
+	#li $t6,0 #Reset Flag hyphen
+	sub $t2,$t2,'0' #2nd digit
+	mul $t8,$t8,10
+	add $t8,$t8,$t2 # two digits now in $t8 (Before -)
+	j BackFromDigit
+	
+IncorrectLectureInsertionStart:
+	li $v0,4
+	la $a0,IncorrectLectureInsertionStartt
+	syscall
+	j Lecture	
+IncorrectLectureInsertionStartEnd:
+	li $v0,4
+	la $a0,IncorrectLectureInsertionStartEndd
+	syscall
+	
+	add $t8,$t8,4
+	
+	li $v0,1
+	move $a0,$t8
+	syscall
+	j Lecture	
+	
+IncorrectLectureInsertionStartLessThan8:
+	li $v0,4
+	la $a0,IncorrectLectureInsertionStartLessThann8
+	syscall
+	
+	j Lecture
+Sub8Lecture8:
+	sub $t8,$t8,8
+	j ContAddLecture8
+Add4Lecture8:
+	add $t8,$t8,4
+	j ContSubLecture8
+Sub8Lecture9:
+	sub $t9,$t9,8
+	j ContAddLecture9
+Add4Lecture9:
+	add $t9,$t9,4
+	j ContSubLecture9
+#------------
+
+Digit1MeetingInsertion:
+	ble $t2,'9',Digit2MeetingInsertion
+	j BackFromDigitt
+	
+Digit2MeetingInsertion:
+	beq $t6,1,AfterHyphenn # check if hyphen flag was up
+	beq $s3,1,MeetingFlagUp#check if the flag was up 
+	li $s3,1 #raise the flag
+	sub $t2,$t2,'0' #convert to integer
+	move $t8,$t2 #$t8 now holds the first digit
+	j BackFromDigitt
+	
+AfterHyphenn:
+	beq $s3,1,SecondDigitAfterHyphenn
+	li $s3,1
+	sub $t2,$t2,'0'
+	move $t7,$t2 #$t9 has 1st digit after hyphen
+	j BackFromDigitt
+	
+SecondDigitAfterHyphenn:
+	sub $t2,$t2,'0'
+	mul $t7,$t7,10
+	add $t7,$t7,$t2
+	li $s3,0 #reset integer flag
+	li $t6,0 #reset hyphen flag
+	j BackFromHyphenn
+	
+MeetingFlagUp:
+	li $s3,0 #Reset Flag 1st integer
+	#li $t6,0 #Reset Flag hyphen
+	sub $t2,$t2,'0' #2nd digit
+	mul $t8,$t8,10
+	add $t8,$t8,$t2 # two digits now in $t8 (Before -)
+	j BackFromDigitt
+
+HyphenOccuredd:
+	li $t6,1#Hyphen Flag
+	li $s3,0#1st integer flag
+	j BackFromHyphenn
+	
+Sub8Meeting8:
+	sub $t8,$t8,8
+	j ContAddMeeting8
+Add4Meeting8:
+	add $t8,$t8,4
+	j ContSubMeeting8
+Sub8Meeting7:
+	sub $t7,$t7,8
+	j ContAddMeeting7
+Add4Meeting7:
+	add $t7,$t7,4
+	j ContSubMeeting7
+	
+IncorrectLectureInsertionStarttt:
+	li $v0,4
+	la $a0,IncorrectLectureInsertionStartt
+	syscall
+	j Meeting
+IncorrectLectureInsertionStartEnddd:
+	li $v0,4
+	la $a0,IncorrectLectureInsertionStartEndd
+	syscall
+	
+	add $t8,$t8,4
+	
+	li $v0,1
+	move $a0,$t8
+	syscall
+	j Meeting
+IncorrectLectureInsertionStartttEndTime:
+	li $v0,4
+	la $a0,IncorrectLectureInsertionStartttEndTimee
+	syscall
+	j Meeting
+#--------------
+UserInput3:#Adding appointment
+	#Ask user for the number of day
+	#Ask beginning and end times for Lectures
+	#Ask beginning and end times for OH
+	#Ask beginning and end times for meetings
+
+	la $s1,CalendarArray
+	#ask for a new day
+	li $v0,4
+	la $a0,InsertDay
+	syscall
+	
+	#read from user
+	li $v0,8
+	la $a0,DayInsertion
+	li $a1,3
+	syscall
+	
+	# Remove newline character from the input
+	la $t0, DayInsertion  # Load the address of the string into $t0
+remove_newline_loop: #to get index of the new line \n
+    	lb   $t1, 0($t0)    # Load the byte at the current address
+    	beq  $t1, $zero, end_remove_newline_loop  # Check if it's the null terminator
+    	beq  $t1, '\n', remove_newline_char  # Check if it's newline
+    	addi $t0, $t0, 1     # Move to the next byte
+    	j    remove_newline_loop
+
+remove_newline_char: # to get rid of the new line and replace it with null terminator
+    	sb   $zero, 0($t0)   # Replace newline with null terminator
+    	j    end_remove_newline_loop
+
+end_remove_newline_loop:
+
+	# Count the bytes in DayInsertion
+    	la   $t0, DayInsertion  # Load the address of the string into $t0
+    	li   $t6, 0             # Initialize a counter to 0
+
+count_bytes_loop:
+    	lb   $t2, 0($t0)        # Load the byte at the current address
+    	
+    	beq  $t2, $zero, end_count_bytes_loop  # Check if it's the null terminator
+    	beq  $t2, '\n', end_count_bytes_loop # check if it's new line
+    	addi $t6, $t6, 1         # Increment the counter
+    	addi $t0, $t0, 1         # Move to the next byte
+	j count_bytes_loop
+
+end_count_bytes_loop:
+    # Now, $t6 contains the number of bytes in DayInsertion
+    
+	la $t0, DayInsertion  # Load the address of the string into $t0
+	#make sure it is valid
+	bgt $t6,1,ConvertoToInteger
+	j SkipConverting
+ConvertoToInteger:
+	lb $t2,0($t0) #first digit
+	lb $t3,1($t0) #second digit
+	
+	# Convert ASCII characters to numbers
+    	sub $t2, $t2, '0'   # Convert ASCII to integer ('0' has ASCII value 48)
+    	sub $t3, $t3, '0'
+    	
+	# Combine the digits to form a two-digit number
+    	mul $t2, $t2, 10    # Multiply the first digit by 10
+    	add $t2, $t2, $t3   # Add the second digit
+    	
+    	bgt $t2,31,IncorrectDayInsertion
+    	blt $t2,1,IncorrectDayInsertion
+
+    	mul $t2,$t2,4
+    	add $t2,$t2,$s1
+	andi $t2, $t2, 0xFFFFFFFC   # Clear the last two bits, aligning to a word boundary
+    	lw $t4,0($t2)
+    	bnez $t4,DarAlrdyExist # Day Already Exist
+	j skipAnotherIndexing
+SkipConverting:
+
+	lb $t2,0($t0) #first digit
+	sub $t2, $t2, '0'   # Convert ASCII to integer ('0' has ASCII value 48)
+	beq $t2,0,IncorrectDayInsertion
+	
+	mul $t2,$t2,4
+    	add $t2,$t2,$s1
+	andi $t2, $t2, 0xFFFFFFFC   # Clear the last two bits, aligning to a word boundary
+    	lw $t4,0($t2)
+    	bnez $t4,DarAlrdyExist
+skipAnotherIndexing:	
+	# Open file
+	li $v0,13
+	la $a0,filename
+	li $a1,9 #writing
+	li $a2,0777 #full access
+	syscall
+	
+	move $s0,$v0
+	
+	#Print New Line
+	li $v0,15 # write to file
+	move $a0,$s0 #file descriptor
+	la $a1,NewLine #What to write
+	li $a2,1 # number of bytes to write
+	syscall
+
+	bgt $t6,1,SkipZero #if number of integers is more than 0 (i.e. 11), then we don't have to add 0 before the number
+	
+	#Print Zero
+	li $v0,15
+	move $a0,$s0
+	la $a1,Zero #What to write
+	li $a2,1 # number of bytes to write
+	syscall
+	
+	blt $v0,0,write_error
+	
+	#la $t0,DayInsertion
+	#lb $t3,0($t0)
+	
+	#Print day
+	li $v0,15
+	move $a0,$s0
+	la $a1,DayInsertion #What to write
+	li $a2,1 # number of bytes to write
+	syscall
+	
+	blt $v0,0,write_error
+j skipNonZero
+SkipZero:
+	#Print day
+	li $v0,15
+	move $a0,$s0
+	la $a1,DayInsertion #What to write
+	li $a2,2 # number of bytes to write
+	syscall
+	
+	blt $v0,0,write_error
+	
+skipNonZero:
+
+	#Print Colon
+	li $v0,15
+	move $a0,$s0
+	la $a1,Colon #What to write
+	li $a2,1 # number of bytes to write
+	syscall
+	
+	blt $v0,0,write_error
+Lecture:
+	#Lectureeeeeeeeeee
+	li $v0,4
+	la $a0,InsertLectureBeginEndTime # 8-9 , 10-11
+	syscall
+    	
+	#read text
+	li $v0,8
+	la $a0,LectureInsertion
+	li $a1,10
+	syscall
+	
+	#Print how many bytes in lecture
+	# Count the bytes in DayInsertion
+    	la   $t0, LectureInsertion  # Load the address of the string into $t0
+    	li   $t7, 0             # Initialize a counter to 0
+
+count_bytes_loop_Lecture:
+    	lb   $t2, 0($t0)        # Load the byte at the current address
+    	beq  $t2, $zero, end_count_bytes_loop_Lecture  # Check if it's the null terminator
+    	beq  $t2, '\n', end_count_bytes_loop_Lecture # check if it's new line
+    	addi $t7, $t7, 1         # Increment the counter
+    	addi $t0, $t0, 1         # Move to the next byte
+	j count_bytes_loop_Lecture
+
+end_count_bytes_loop_Lecture:
+    # Now, $t7 contains the number of bytes in LectureInsertion
+	
+	la $t0,LectureInsertion
+	
+#Validate LectureInsertion
+	li $a3,0 #iterator
+	li $s3,0 #Flag 1st integer
+	li $t6,0 #Flag Hyphen
+	
+LectureInsertionLoop:
+	lb $t2,0($t0)
+	#sub $t2, $t2, '0'   # Convert ASCII to integer ('0' has ASCII value 48)
+	
+	bge $t2,'0',Digit1LectureInsertion
+BackFromDigit:
+	beq $t2,'-',HyphenOccured
+BackFromHyphen:
+	addi $t0,$t0,1
+	addi $a3,$a3,1
+	bge $a3,$t7,ExitLoopLectureInsertion
+	j LectureInsertionLoop
+	
+ExitLoopLectureInsertion:
+# $t88 has start time 
+# $t9 has end time
+	bgt $t8,12,IncorrectLectureInsertionStart
+	blt $t8,1,IncorrectLectureInsertionStart
+	
+
+	bgt $t9,12,IncorrectLectureInsertionStart
+	blt $t9,1,IncorrectLectureInsertionStart
+	blt $t8,8,IncorrectLectureInsertionStartLessThan8
+	
+	bgt $t8,7,Sub8Lecture8
+ContAddLecture8:
+	blt $t8,7,Add4Lecture8
+ContSubLecture8:
+	bgt $t9,7,Sub8Lecture9
+ContAddLecture9:
+	blt $t9,7,Add4Lecture9
+ContSubLecture9:	
+	blt $t9,$t8,IncorrectLectureInsertionStartEnd
+	
+	
+	li $v0,15
+	move $a0,$s0
+	la $a1,LectureInsertion #What to write
+	move $a2,$t7 # number of bytes to write
+	syscall
+	
+	blt $v0,0,write_error
+	
+	#Print Space
+	li $v0,15
+	move $a0,$s0
+	la $a1,Space #What to write
+	li $a2,1 # number of bytes to write
+	syscall
+	
+	blt $v0,0,write_error
+	
+	#Print 'L'
+	li $v0,15
+	move $a0,$s0
+	la $a1,L #What to write
+	li $a2,1 # number of bytes to write
+	syscall
+	
+	blt $v0,0,write_error
+	
+	#Print Comma
+	li $v0,15
+	move $a0,$s0
+	la $a1,Comma #What to write
+	li $a2,1 # number of bytes to write
+	syscall
+	
+	blt $v0,0,write_error
+	
+	#Print Space
+	li $v0,15
+	move $a0,$s0
+	la $a1,Space #What to write
+	li $a2,1 # number of bytes to write
+	syscall
+	
+	blt $v0,0,write_error
+
+	#OHHHHHHHHHH
+	li $v0,4
+	la $a0,InsertOHBeginEndTime # 8-9 , 10-11
+	syscall
+    	
+	#read text
+	li $v0,8
+	la $a0,OHInsertion
+	li $a1,10
+	syscall
+	
+	#Print how many bytes in OH
+	# Count the bytes in OHInsertion
+    	la   $t0, OHInsertion  # Load the address of the string into $t0
+    	li   $t8, 0             # Initialize a counter to 0
+
+count_bytes_loop_OH:
+    	lb   $t2, 0($t0)        # Load the byte at the current address
+    	beq  $t2, $zero, end_count_bytes_loop_OH  # Check if it's the null terminator
+    	beq  $t2, '\n', end_count_bytes_loop_OH # check if it's new line
+    	addi $t8, $t8, 1         # Increment the counter
+    	addi $t0, $t0, 1         # Move to the next byte
+	j count_bytes_loop_OH
+
+end_count_bytes_loop_OH:
+    # Now, $t8 contains the number of bytes in LectureInsertion
+
+	#Print OH insertion
+	li $v0,15
+	move $a0,$s0
+	la $a1,OHInsertion #What to write
+	move $a2,$t8 # number of bytes to write
+	syscall
+	
+	blt $v0,0,write_error
+	
+	#Print Space
+	li $v0,15
+	move $a0,$s0
+	la $a1,Space #What to write
+	li $a2,1 # number of bytes to write
+	syscall
+	
+	blt $v0,0,write_error	
+	
+	#Print OH
+	li $v0,15
+	move $a0,$s0
+	la $a1,OH #What to write
+	li $a2, 2# number of bytes to write
+	syscall
+	
+	blt $v0,0,write_error
+	
+	#Print Comma
+	li $v0,15
+	move $a0,$s0
+	la $a1,Comma #What to write
+	li $a2,1 # number of bytes to write
+	syscall
+	
+	blt $v0,0,write_error
+	
+	#Print Space
+	li $v0,15
+	move $a0,$s0
+	la $a1,Space #What to write
+	li $a2,1 # number of bytes to write
+	syscall
+	
+	blt $v0,0,write_error
+
+Meeting:
+		
+	#Meetinggggggg
+	li $v0,4
+	la $a0,InsertMeetingBeginEndTime # 8-9 , 10-11
+	syscall
+    	
+	#read text
+	li $v0,8
+	la $a0,MeetingInsertion
+	li $a1,10
+	syscall
+	
+	#Print how many bytes in Meeting
+	# Count the bytes in MeetingInsertion
+    	la   $t0, MeetingInsertion  # Load the address of the string into $t0
+    	li   $t9, 0             # Initialize a counter to 0
+
+count_bytes_loop_Meeting:
+    	lb   $t2, 0($t0)        # Load the byte at the current address
+    	beq  $t2, $zero, end_count_bytes_loop_Meeting  # Check if it's the null terminator
+    	beq  $t2, '\n', end_count_bytes_loop_Meeting # check if it's new line
+    	addi $t9, $t9, 1         # Increment the counter
+    	addi $t0, $t0, 1         # Move to the next byte
+	j count_bytes_loop_Meeting
+
+end_count_bytes_loop_Meeting:
+    # Now, $t9 contains the number of bytes in MeetingInsertion
+	
+	la $t0,MeetingInsertion
+	
+#Validate LectureInsertion
+	li $a3,0 #iterator
+	li $s3,0 #Flag 1st integer
+	li $t6,0 #Flag Hyphen
+	
+MeetingInsertionLoop:
+	lb $t2,0($t0)
+	
+	bge $t2,'0',Digit1MeetingInsertion
+BackFromDigitt:
+	beq $t2,'-',HyphenOccuredd
+BackFromHyphenn:
+	addi $t0,$t0,1
+	addi $a3,$a3,1
+	bge $a3,$t9,ExitLoopMeetingInsertion
+	j MeetingInsertionLoop
+	
+ExitLoopMeetingInsertion:
+
+
+	bgt $t8,12,IncorrectLectureInsertionStarttt
+	blt $t8,1,IncorrectLectureInsertionStarttt
+	
+
+	bgt $t7,12,IncorrectLectureInsertionStarttt
+	blt $t7,1,IncorrectLectureInsertionStarttt
+	bgt $t7,5,IncorrectLectureInsertionStartttEndTime
+	
+	bgt $t8,7,Sub8Meeting8
+ContAddMeeting8:
+	blt $t8,7,Add4Meeting8
+ContSubMeeting8:
+	bgt $t7,7,Sub8Meeting7
+ContAddMeeting7:
+	blt $t7,7,Add4Meeting7
+ContSubMeeting7:	
+	blt $t7,$t8,IncorrectLectureInsertionStartEnddd
+
+	#Print MeetingInsertion
+	li $v0,15
+	move $a0,$s0
+	la $a1,MeetingInsertion #What to write
+	move $a2,$t9 # number of bytes to write
+	syscall
+	
+	blt $v0,0,write_error
+		
+	#Print Space
+	li $v0,15
+	move $a0,$s0
+	la $a1,Space #What to write
+	li $a2,1 # number of bytes to write
+	syscall
+	
+	blt $v0,0,write_error
+
+	#Print M
+	li $v0,15
+	move $a0,$s0
+	la $a1,M #What to write
+	li $a2,1 # number of bytes to write
+	syscall
+	
+	blt $v0,0,write_error
+		
+	#Close the file	
+	li $v0,16
+	move $a0,$s0
+	syscall
+	
+	li $s5,0 #reset lecture hours
+	li $s6,0 #reset OH hours
+	li $s7,0 #reset Meeting hours
+	jal loadCalendar2d #Load it again
+	jal loadCalendar #Load it again
+	
+	j enter
+	
+open_error:
+    # Handle error opening the file
+    li $v0, 4        # syscall for print_str
+    la $a0, OpenErrorMsg
+    syscall
+    
+    j enter
+
+write_error:
+    # Handle error writing to the file
+    li $v0, 4        # syscall for print_str
+    la $a0, WriteErrorMsg
+    syscall
+    
+    j enter
+
+	
+UserInput4:#Deleting appointment
+	#Ask user to enter day
+	#Delete the day
+	
+	li $v0,4
+	la $a0,WhatDay
+	syscall
+	
+	li $v0,5
+	syscall
+	
+	move $t0,$v0 #t0 holds day number
+	la $t1,CalendarArray
+	la $t2,CalendarArray2d
+
+	
+	
+	mul $t0,$t0,4
+	add $t0,$t0,$t1
+	andi $t0, $t0, 0xFFFFFFFC   # Clear the last two bits, aligning to a word boundary
+	sw $zero,0($t0) 
+	
+	
+	j enter #to go back to user choosing
+	
+#if user enters '0'
+Exit:
+	#print to user
+	li $v0,4
+	la $a0,PrintToUser1
+	syscall
+  
+# Exit the program
+	li   $v0, 10          # System call for exit (syscall 10)
+	syscall              # Perform the system call
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+loadCalendar:
+    # Open the file for reading
+    li   $v0, 13          # System call for opening a file (syscall 13)
+    la   $a0, filename    # Load the address of the filename into $a0
+    li   $a1, 0           # Open for reading
+    syscall              # Perform the system call
+
+    move $s0, $v0         # Save the file descriptor for later use s0=file , file descriptor now in $s0
+   	
+    la $t0, CalendarArray # Load the address of the CalendarArray into register $t1
+    
+read_loop:
+   # Allocate memory for a line
+    li   $v0, 9           # System call for sbrk (syscall 9)
+    li   $a0, 32          # Number of bytes to allocate
+    syscall              # Perform the system call, $v0 will contain the address of the allocated memory
+
+    move $t1, $v0         # Save the address of the allocated memory in $t1
+
+    # Read from the file
+    li   $v0, 14          # System call for reading from a file (syscall 14)
+    move $a0, $s0         # File descriptor to read from
+    move $a1, $t1         # Load the address of the buffer into $a1
+    li   $a2, 26        # Number of bytes to read (26+/r)
+    syscall              # Perform the system call
+    # Check if the end of the file has been reached (if  the read bytes are 0)
+    beq $v0,0, end_of_file
+    
+#-------------
+    # Load the first two characters from the string
+    lb $t1, 0($a1)      # Load the first character
+    lb $t2, 1($a1)      # Load the second character
+    
+    # Convert ASCII characters to numbers
+    sub $t1, $t1, '0'   # Convert ASCII to integer ('0' has ASCII value 48)
+    sub $t2, $t2, '0'
+
+    # Combine the digits to form a two-digit number
+    mul $t1, $t1, 10    # Multiply the first digit by 10
+    add $t1, $t1, $t2   # Add the second digit
+    
+    #$t1 now holds 'i'
+    
+    mul $t1,$t1,4 # i*4
+    add $t1,$t1,$t0 # (i*4) + %CalendarArray
+    andi $t1, $t1, 0xFFFFFFFC   # Clear the last two bits, aligning to a word boundary
+#-------------	
+    ## Store the address of the start of the chunk in the array
+    sw $a1, 0($t1)
+    j read_loop
+    
+end_of_file:
+
+    # Close the file
+    li   $v0, 16          # System call for closing a file (syscall 16)
+    move $a0, $s0         # File descriptor to close
+    syscall              # Perform the system call
+    
+    jr $ra
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+loadCalendar2d:
+    # Open the file for reading
+    li   $v0, 13          # System call for opening a file (syscall 13)
+    la   $a0, filename    # Load the address of the filename into $a0
+    li   $a1, 0           # Open for reading
+    syscall              # Perform the system call
+    move $s0, $v0         # Save the file descriptor for later use s0=file
+    
+    li $t7,0 # A flag to let me know if I already read a number or not (0=No)(1=Yes)
+    li $t8,0 # A flag to tell me if I read '-' or not (0=No)(1=Yes)
+    la $t0, CalendarArray2d # Load the address of the CalendarArray into register $t0
+    li $s2,0 # A register to hold the number of days
+    li $s5,0 #Lecture hour counter
+    li $s6,0 #OH hour counter
+    li $s7,0 #Meeting hour counter
+    
+ReadNewLine:
+    # Allocate memory for a byte
+    li   $v0, 9           # System call for sbrk (syscall 9)
+    li   $a0, 1         # Number of bytes to allocate (adjust according to your needs)
+    syscall              # Perform the system call, $v0 will contain the address of the allocated memory
+    move $t1, $v0         # Save the address of the allocated memory in $t1
+
+    # Read from the file
+    li   $v0, 14          # System call for reading from a file (syscall 14)
+    move $a0, $s0         # File descriptor to read from
+    move $a1, $t1         # Load the address of the buffer into $a1
+    li   $a2, 1          # Number of bytes to read (26+/r)
+    syscall              # Perform the system call
+    addi $s2,$s2,1
+    beq $v0,0, end_of_file2d
+
+    lb $s1,0($a1)
+    sub $s1,$s1,'0' #Converting it into a number
+    #4s1 has the first number
+    
+    # Allocate memory for a byte
+    li   $v0, 9           # System call for sbrk (syscall 9)
+    li   $a0, 1         # Number of bytes to allocate (adjust accosssdasdo your needs)
+    syscall              # Perform the system call, $v0 will contain the address of the allocated memory
+    move $t1, $v0         # Save the address of the allocated memory in $t1
+
+    # Read from the file
+    li   $v0, 14          # System call for reading from a file (syscall 14)
+    move $a0, $s0         # File descriptor to read from
+    move $a1, $t1         # Load the address of the buffer into $a1
+    li   $a2, 1          # Number of bytes to read (26+/r)
+    syscall              # Perform the system call
+    beq $v0,0, end_of_file2d
+    
+    lb $t6,0($a1)
+    sub $t6,$t6,'0' #converting to number
+    
+    mul $s1, $s1, 10    # Multiply the first digit by 10
+       	
+    add $s1, $s1, $t6   # Add the second digit
+    
+    subi $s1,$s1,1 #subtract 1 to get the index 'i'
+    mul $s1,$s1,9 # i*9 , 9 is the number of columns
+    #$s1 now holds i*9
+        
+read_loop2d: # matrix[i][j] = &matrix + (i×Cols + j) × element_size --> $CalendarArray2d + (day*9+time) * 4 --> $CalendarArray2d + 36*day+time
+    		
+
+   # Allocate memory for a line
+    li   $v0, 9           # System call for sbrk (syscall 9)
+    li   $a0, 30          # Number of bytes to allocate (adjust according to your needs)
+    syscall              # Perform the system call, $v0 will contain the address of the allocated memory
+
+    move $t1, $v0         # Save the address of the allocated memory in $t1
+
+    # Read from the file
+    li   $v0, 14          # System call for reading from a file (syscall 14)
+    move $a0, $s0         # File descriptor to read from
+    move $a1, $t1         # Load the address of the buffer into $a1
+    li   $a2, 1          # Number of bytes to read (26+/r)
+    syscall              # Perform the system call
+    beq $v0,0, end_of_file2d    # Check if the end of the file has been reached (if  the read bytes are 0)
+    
+    #if '-' hasn;t been reached, store any number in $s3
+    #if '-' has been reached, store any number read in $s4
+    #wait for 'L','M','O', then subtract $s4 from $s3, and store the character in the index
+    
+    # if it is an number, store it in $s3 and raise the flag
+    # if I read another number, mult $s3 and add the number to $s3
+    #if the read byte is '-'
+    
+# matrix[i][j] = &matrix + (i×Cols + j) × element_size --> $CalendarArray2d + (day*9+time) * 4 --> $CalendarArray2d + 36*day+time --> $CalendarArray2d+364+4j
+#--> matrix[i][j] = $t0 + $s1 + 4j
+    # $t7-->number read flag || $t8--> '-' read flag
+    lb $a1,0($a1)
+    
+    beq $a1,'\n',ReadNewLine #to read new index 'i'
+    beq $a1,'-',flag2Up # $t8=1  , $t7=0
+    beq $a1,'L',StoreLecture
+    beq $a1,'M',StoreMeeting
+    beq $a1,'O',StoreOfficeHour
+    bge $a1,'0',Digit1 #if it was number
+    
+    #check if the character is a digit or not 
+    # $s3 register needed for first part of time slot
+    # $a1 register needed for the next number if it was two numbers in a row
+    # $s4,$a1 register needed for the same reasons, but after reading '-'(flag2 is up)
+    #if any of L,M,O is read, reset flag 
+    # $s5 needed for the subtraction of $s4-$s3 
+    # j = $s3, $s5 was more than 1, repeat for much times, every iteration adds 1 to $s3
+
+    j read_loop2d
+flag2Up:
+	li $t8,1
+	li $t7,0
+	j read_loop2d
+
+Digit1:
+	ble $a1,'9',Digit2
+	j read_loop2d
+	
+Digit2: #We made sure that the character is a number
+	beq $t8,1,Digit2After_
+	beq $t7,1,FlagUp # IF it is the second number, Call FlagUp function
+	li $t7, 1 # if it is the first number, raise the flag
+	
+	sub $s3,$a1,'0' #converting it into a number
+	#%s3 now holds the number
+	
+	j read_loop2d
+	
+FlagUp: #we are reading the second number
+	sub $a1,$a1, '0' #converting the value into an integer
+
+	# Combine the digits to form a two-digit number
+    	mul $s3, $s3, 10    # Multiply the first digit by 10
+    	add $s3, $s3, $a1   # Add the second digit
+	
+    	li $t7,0 #reset flag
+	j read_loop2d
+	
+Digit2After_:
+	beq $t7,1,FlagUpAfter_
+	li $t7,1
+	sub $s4,$a1,'0'
+	
+	j read_loop2d
+	
+FlagUpAfter_:
+	sub $a1,$a1, '0' #converting the value into an integer
+
+	# Combine the digits to form a two-digit number
+    	mul $s4, $s4, 10    # Multiply the first digit by 10
+    	add $s4, $s4, $a1   # Add the second digit
+
+	li $t7,0 #reset flag
+	j read_loop2d
+	
+StoreLecture:
+    # Code for handling 'L' case
+    li $t7,0 #Reset Integer flag
+    li $t8,0 #Reset '-' flag
+    
+    li $t5,0 #iterator
+    
+    # fix the numbers in $s3 and $s4
+    bgt $s3,7,Subtract8Ls3
+    blt $s3,7,Add4Ls3
+BackFromFixingL3:
+    bgt $s4,7,Subtract8Ls4
+    blt $s4,7,Add4Ls4
+BackFromFixingL4:
+    sub $t3,$s4,$s3 # how many times to iterate
+    add $s3,$s3,$s1 # Add the 'j'
+    add $s3,$s3,$t0 # Add the Array Address    
+LectureStoringLoop:
+    addi $s5,$s5,1 # add lecture hours counter
+    sb $a1,0($s3) #Store L into the array
+    
+    addi $s3,$s3,1 # add to the address
+    addi $t5,$t5,1 #add to the iteration
+    bne $t5,$t3,LectureStoringLoop
+    
+    j read_loop2d
+
+StoreOfficeHour:
+    # Code for handling 'O' case
+    li $t7,0 #Reset Integer flag
+    li $t8,0 #Reset '-' flag
+    li $t5,0 #iterator
+    
+    # fix the numbers in $s3 and $s4
+    bgt $s3,7,Subtract8Os3
+    blt $s3,7,Add4Os3
+BackFromFixingO3:
+    bgt $s4,7,Subtract8Os4
+    blt $s4,7,Add4Os4
+BackFromFixingO4:
+
+    sub $t3,$s4,$s3 # how many times to iterate
+    add $s3,$s3,$s1
+    add $s3,$s3,$t0
+        
+OfficeHoursStoringLoop:
+    addi $s6,$s6,1 # add OH hours counter
+    sb $a1,0($s3)
+    
+    addi $s3,$s3,1
+    addi $t5,$t5,1
+    bne $t5,$t3,OfficeHoursStoringLoop
+    
+    j read_loop2d
+
+StoreMeeting:
+    # Code for handling 'M' case
+    li $t7,0 #Reset Integer flag
+    li $t8,0 #Reset '-' flag
+    li $t5,0 #iterator
+
+    # fix the numbers in $s3 and $s4
+    bgt $s3,7,Subtract8Ms3
+    blt $s3,7,Add4Ms3
+BackFromFixingM3:
+    bgt $s4,7,Subtract8Ms4
+    blt $s4,7,Add4Ms4
+BackFromFixingM4:
+    
+    sub $t3,$s4,$s3 # how many times to iterate
+    add $s3,$s3,$s1
+    add $s3,$s3,$t0
+
+MeetingStoringLoop:
+    addi $s7,$s7,1 # add Meeting hours counter
+    sb $a1,0($s3)
+    addi $s3,$s3,1
+    addi $t5,$t5,1
+    bne $t5,$t3,MeetingStoringLoop
+    
+    j read_loop2d
+#-------------
+#Lecture
+Subtract8Ls3:
+	subi $s3,$s3,8
+	j BackFromFixingL3
+Add4Ls3:
+	addi $s3,$s3,4
+	j BackFromFixingL3
+Subtract8Ls4:
+	subi $s4,$s4,8
+	j BackFromFixingL4
+Add4Ls4:
+	addi $s4,$s4,4
+	j BackFromFixingL4
+
+#Office Hours
+Subtract8Os3:
+	subi $s3,$s3,8
+	j BackFromFixingO3
+Add4Os3:
+	addi $s3,$s3,4
+	j BackFromFixingO3
+Subtract8Os4:
+	subi $s4,$s4,8
+	j BackFromFixingO4
+Add4Os4:
+	addi $s4,$s4,4
+	j BackFromFixingO4
+
+#Meeting
+Subtract8Ms3:
+	subi $s3,$s3,8
+	j BackFromFixingM3
+Add4Ms3:
+	addi $s3,$s3,4
+	j BackFromFixingM3
+Subtract8Ms4:
+	subi $s4,$s4,8
+	j BackFromFixingM4
+Add4Ms4:
+	addi $s4,$s4,4
+	j BackFromFixingM4
+
+
+end_of_file2d:
+
+    subi $s2,$s2,1
+    
+    li $v0,4
+    la $a0,NumberOFDays
+    syscall
+
+    li $v0,1
+    move $a0,$s2
+    syscall
+
+    # Close the file
+    li   $v0, 16          # System call for closing a file (syscall 16)
+    move $a0, $s0         # File descriptor to close
+    syscall              # Perform the system call
+    
+
+    
+    jr $ra
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+
